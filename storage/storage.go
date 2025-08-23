@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/osamikoyo/yoconf/config"
@@ -24,8 +25,8 @@ func NewStorage(db *gorm.DB, logger *logger.Logger, cfg *config.Config) *Storage
 	}
 }
 
-func (s *Storage) CreateNewChunk(chunk *models.Chunk) error {
-	res := s.db.Where(&models.Chunk{
+func (s *Storage) CreateNewChunk(ctx context.Context, chunk *models.Chunk) error {
+	res := s.db.WithContext(ctx).Where(&models.Chunk{
 		InUse:   true,
 		Project: chunk.Project,
 	}).Updates(&models.Chunk{InUse: false})
@@ -37,7 +38,7 @@ func (s *Storage) CreateNewChunk(chunk *models.Chunk) error {
 		return fmt.Errorf("failed update old chunk: %v", err)
 	}
 
-	res = s.db.Create(chunk)
+	res = s.db.WithContext(ctx).Create(chunk)
 	if err := res.Error; err != nil {
 		s.logger.Error("failed create new chunk",
 			zap.Any("chunk", chunk),
@@ -51,10 +52,10 @@ func (s *Storage) CreateNewChunk(chunk *models.Chunk) error {
 	return nil
 }
 
-func (s *Storage) GetChunk(project string) (*models.Chunk, error) {
+func (s *Storage) GetChunk(ctx context.Context, project string) (*models.Chunk, error) {
 	var chunk models.Chunk
 
-	res := s.db.Where(&models.Chunk{
+	res := s.db.WithContext(ctx).Where(&models.Chunk{
 		InUse:   true,
 		Project: project,
 	}).First(&chunk)
@@ -69,10 +70,10 @@ func (s *Storage) GetChunk(project string) (*models.Chunk, error) {
 	return &chunk, nil
 }
 
-func (s *Storage) ListVersions(project string) ([]int, error) {
+func (s *Storage) ListVersions(ctx context.Context, project string) ([]int, error) {
 	var versions []models.Chunk
 
-	res := s.db.Where(&models.Chunk{
+	res := s.db.WithContext(ctx).Where(&models.Chunk{
 		Project: project,
 	}).Find(&versions)
 	if err := res.Error; err != nil {
@@ -94,8 +95,8 @@ func (s *Storage) ListVersions(project string) ([]int, error) {
 	return resp, nil
 }
 
-func (s *Storage) RollChunkOn(project string, version int) error {
-	res := s.db.Where(&models.Chunk{
+func (s *Storage) RollChunkOn(ctx context.Context, project string, version int) error {
+	res := s.db.WithContext(ctx).Where(&models.Chunk{
 		Project: project,
 		InUse:   true,
 	}).Update("in_use", false)
@@ -108,7 +109,7 @@ func (s *Storage) RollChunkOn(project string, version int) error {
 		return fmt.Errorf("failed to update old version: %v", err)
 	}
 
-	res = s.db.Where(&models.Chunk{
+	res = s.db.WithContext(ctx).Where(&models.Chunk{
 		Project: project,
 		Version: version,
 	}).Update("in_use", true)
@@ -128,8 +129,8 @@ func (s *Storage) RollChunkOn(project string, version int) error {
 	return nil
 }
 
-func (s *Storage) DeleteConfig(project string, version int) error {
-	res := s.db.Where(&models.Chunk{
+func (s *Storage) DeleteConfig(ctx context.Context, project string, version int) error {
+	res := s.db.WithContext(ctx).Where(&models.Chunk{
 		Project: project,
 		Version: version,
 	}).Delete(&models.Chunk{})
