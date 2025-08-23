@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	HttpPort int    `yaml:"http_port"`
+	HTTPPort int    `yaml:"http_port"`
 	GrpcPort int    `yaml:"grpc_port"`
 	Addr     string `yaml:"addr"`
-	RedisUrl string `yaml:"redis_url"`
+	RedisURL string `yaml:"redis_url"`
 	CfgDir   string `yaml:"cfg_dir"`
 }
 
