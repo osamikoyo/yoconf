@@ -29,17 +29,11 @@ func (c *Casher) Close() error {
 	return c.client.Close()
 }
 
-func getKey(project string, version int, use bool) string {
-	return fmt.Sprintf("%s:%d:%t", project, version, use)
-}
-
 func (c *Casher) CreateChunk(ctx context.Context, chunk *models.Chunk) error {
-	key := getKey(chunk.Project, chunk.Version, chunk.InUse)
-
-	_, err := c.client.Set(ctx, key, chunk.Data, ExpTime).Result()
+	_, err := c.client.Set(ctx, chunk.Project, chunk.Data, ExpTime).Result()
 	if err != nil {
 		c.logger.Error("failed set",
-			zap.String("key", key),
+			zap.String("key", chunk.Project),
 			zap.Error(err))
 
 		return fmt.Errorf("failed set: %v", err)
@@ -51,38 +45,34 @@ func (c *Casher) CreateChunk(ctx context.Context, chunk *models.Chunk) error {
 	return nil
 }
 
-func (c *Casher) GetData(ctx context.Context, project string, version int) (string, error) {
-	key := getKey(project, version, true)
-
-	data, err := c.client.Get(ctx, key).Result()
+func (c *Casher) GetData(ctx context.Context, project string) (string, error) {
+	data, err := c.client.Get(ctx, project).Result()
 	if err != nil {
 		c.logger.Error("failed get data",
-			zap.String("key", key),
+			zap.String("key", project),
 			zap.Error(err))
 
 		return "", err
 	}
 
 	c.logger.Info("successfully fetch data",
-		zap.String("key", "key"))
+		zap.String("key", project))
 
 	return data, nil
 }
 
-func (c *Casher) DeleteChunk(ctx context.Context, project string, version int, use bool) error {
-	key := getKey(project, version, use)
-
-	_, err := c.client.Del(ctx, key).Result()
+func (c *Casher) DeleteChunk(ctx context.Context, project string) error {
+	_, err := c.client.Del(ctx, project).Result()
 	if err != nil {
 		c.logger.Error("failed delete",
-			zap.String("key", key),
+			zap.String("key", project),
 			zap.Error(err))
 
 		return fmt.Errorf("failed delete: %v", err)
 	}
 
 	c.logger.Info("successfully delete chunk",
-		zap.String("key", key))
+		zap.String("key", project))
 
 	return nil
 }
