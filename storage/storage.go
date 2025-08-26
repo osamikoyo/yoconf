@@ -70,6 +70,36 @@ func (s *Storage) GetChunk(ctx context.Context, project string) (*models.Chunk, 
 	return &chunk, nil
 }
 
+func unique(slice []string) []string {
+	seen := make(map[string]bool)
+	result := []string{}
+
+	for _, val := range slice {
+		if !seen[val] {
+			seen[val] = true
+			result = append(result, val)
+		}
+	}
+	return result
+}
+
+func (s *Storage) ListProjects(ctx context.Context) ([]string, error) {
+	var chunks []models.Chunk
+
+	res := s.db.WithContext(ctx).Find(&chunks)
+	if err := res.Error; err != nil {
+		s.logger.Error("failed list project", zap.Error(err))
+		return nil, err
+	}
+
+	projects := make([]string, len(chunks))
+	for i, c := range chunks {
+		projects[i] = c.Project
+	}
+
+	return unique(projects), nil
+}
+
 func (s *Storage) ListVersions(ctx context.Context, project string) ([]int, error) {
 	var versions []models.Chunk
 
