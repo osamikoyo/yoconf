@@ -2,6 +2,7 @@ package casher
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -30,7 +31,15 @@ func (c *Casher) Close() error {
 }
 
 func (c *Casher) CreateChunk(ctx context.Context, chunk *models.Chunk) error {
-	_, err := c.client.Set(ctx, chunk.Project, chunk.Data, ExpTime).Result()
+	data, err := json.Marshal(chunk)
+	if err != nil {
+		c.logger.Error("failed marshal chunk",
+			zap.Any("chunk", chunk),
+			zap.Error(err))
+
+		return fmt.Errorf("failed marshal chunk: %v", err)
+	}
+	_, err = c.client.Set(ctx, chunk.Project, string(data), ExpTime).Result()
 	if err != nil {
 		c.logger.Error("failed set",
 			zap.String("key", chunk.Project),
@@ -50,6 +59,15 @@ func (c *Casher) GetData(ctx context.Context, project string) (string, error) {
 	if err != nil {
 		c.logger.Error("failed get data",
 			zap.String("key", project),
+			zap.Error(err))
+
+		return "", err
+	}
+
+	chunk := models.Chunk{}
+	if err = json.Unmarshal([]byte(data), &chunk); err != nil {
+		c.logger.Error("failed unmarshal data",
+			zap.String("data", data),
 			zap.Error(err))
 
 		return "", err
