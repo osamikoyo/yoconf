@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -124,7 +125,7 @@ func (c *Core) RollOn(project string, version int) error {
 	return nil
 }
 
-func (c *Core) GetConfig(project string) (string, error) {
+func (c *Core) GetConfig(project string) (*models.Chunk, error) {
 	ctx, cancel := c.context()
 	defer cancel()
 
@@ -132,7 +133,12 @@ func (c *Core) GetConfig(project string) (string, error) {
 	if err == nil {
 		c.logger.Info("successfully fetched config", zap.String("data", data))
 
-		return data, nil
+		chunk := models.Chunk{}
+		if err = json.Unmarshal([]byte(data), &chunk); err != nil {
+			return nil, err
+		}
+
+		return &chunk, nil
 	}
 
 	chunk, err := c.storage.GetChunk(ctx, project)
@@ -141,5 +147,18 @@ func (c *Core) GetConfig(project string) (string, error) {
 	}
 
 	c.logger.Info("successfully fetched config", zap.Any("chunk", chunk))
-	return chunk.Data, nil
+	return chunk, nil
+}
+
+func (c *Core) DeleteChunk(project string, version int) error {
+	ctx, cancel := c.context()
+	defer cancel()
+
+	if err := c.storage.DeleteConfig(ctx, project, version); err != nil {
+		c.logger.Error("failed delete config", zap.Error(err))
+
+		return err
+	}
+
+	return nil
 }
