@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+message Chunk {
+  string Data = 1;
+  int32 Version = 2;
+  bool InUse = 3;
+  string Project = 4;
+}
+
+message Resp {
+  string Message = 1;
+}
+
+message RollOnRequest {
+  string Project = 1;
+  int32 Version = 2;
+}
+
+message DeleteRequest {
+  string Project = 1;
+  int32 Version = 2;
+}
+
+service YoConf {
+  rpc CreateChunk(Chunk) returns (Resp);
+  rpc RollOn(RollOnRequest) returns (Resp);
+  rpc DeleteChunk(DeleteRequest) returns (Resp);
+}
