@@ -12,7 +12,7 @@ type Config struct {
 	GrpcPort int    `yaml:"grpc_port"`
 	Addr     string `yaml:"addr"`
 	RedisURL string `yaml:"redis_url"`
-	CfgDir   string `yaml:"cfg_dir"`
+	DBPath   string `yaml:"db_path"`
 }
 
 func NewConfig(addr string) (*Config, error) {
